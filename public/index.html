@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Telegram Bot Console</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #121212;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .card {
+            background: #1e1e1e;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 900px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .card h1 {
+            font-size: 1.8rem;
+            color: #fff;
+            margin: 0;
+            padding: 15px;
+            background: linear-gradient(90deg, #3498db, #8e44ad);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.8), 0 0 15px rgba(142, 68, 173, 0.8);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        #clock {
+            font-size: 1rem;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px 12px;
+            border-radius: 5px;
+            margin-top: 8px;
+            text-align: right;
+        }
+
+        #log {
+            font-size: 1rem;
+            color: #e0e0e0;
+            background: #1e1e1e;
+            padding: 15px;
+            margin-top: 10px;
+            height: 300px;
+            overflow-y: auto;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                padding: 15px;
+            }
+
+            .card h1 {
+                font-size: 1.5rem;
+            }
+
+            #clock {
+                font-size: 0.9rem;
+            }
+
+            #log {
+                font-size: 0.9rem;
+                height: 250px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                width: 95%;
+            }
+
+            .card h1 {
+                font-size: 1.2rem;
+            }
+
+            #clock {
+                font-size: 0.85rem;
+            }
+
+            #log {
+                font-size: 0.85rem;
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>
+            Telegram Bot Console
+            <div id="clock"></div>
+        </h1>
+        <div id="log"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const log = document.getElementById("log");
+
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            const timeStr = `${hours}:${minutes}:${seconds} ${ampm}`;
+            const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const locationStr = `Philippines (Asia/Manila)`;
+            document.getElementById('clock').innerText = `${timeStr}\n${dateStr}\n${locationStr}`;
+        }
+
+        function appendToLog(data) {
+            log.innerText += data;
+            log.scrollTop = log.scrollHeight;
+            let currentLogs = localStorage.getItem('logData') || '';
+            localStorage.setItem('logData', currentLogs + data);
+        }
+
+        function restoreLogs() {
+            const savedLogs = localStorage.getItem('logData');
+            if (savedLogs) {
+                log.innerText = savedLogs;
+                log.scrollTop = log.scrollHeight;
+            }
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+        restoreLogs();
+
+        socket.on("log", (data) => {
+            appendToLog(data);
+        });
+    </script>
+</body>
+</html>

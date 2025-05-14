@@ -1,16 +1,20 @@
 const { spawn } = require("child_process");
 const express = require("express");
 const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const server = http.createServer(app);
+const io = new Server(server);
 
-app.get('/', (req, res) => {
-    res.send('Telegram Bot is running!');
-});
+const port = process.env.PORT || 8080;
 
-app.listen(port, '0.0.0.0', () => {
-    console.log(`Telegram Bot server is running on port ${port}`);
+// Serve static files from "public" directory
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 let botProcess = null;
@@ -23,17 +27,36 @@ const manageBotProcess = (script) => {
 
     botProcess = spawn("node", ["--trace-warnings", "--async-stack-traces", script], {
         cwd: __dirname,
-        stdio: "inherit",
         shell: true
     });
 
+    botProcess.stdout.on("data", (data) => {
+        const message = data.toString();
+        console.log(message);
+        io.emit("log", message);
+    });
+
+    botProcess.stderr.on("data", (data) => {
+        const message = data.toString();
+        console.error(message);
+        io.emit("log", message);
+    });
+
     botProcess.on("close", (exitCode) => {
-        console.log(`${script} terminated with code: ${exitCode}`);
+        const message = `${script} terminated with code: ${exitCode}`;
+        console.log(message);
+        io.emit("log", message);
     });
 
     botProcess.on("error", (error) => {
-        console.error(`Error while starting ${script}: ${error.message}`);
+        const message = `Error while starting ${script}: ${error.message}`;
+        console.error(message);
+        io.emit("log", message);
     });
 };
 
 manageBotProcess("core/main.js");
+
+server.listen(port, "0.0.0.0", () => {
+    console.log(`Telegram Bot server is running on port ${port}`);
+});
