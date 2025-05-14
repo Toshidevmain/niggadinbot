@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/Kaizenji/Ownersv2-TelegramBot.git",
+  "branch": "main",
+  "preserve": ["setup"],
+  "backup": "core/backups"
+}
